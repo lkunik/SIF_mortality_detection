@@ -1,0 +1,1 @@
+/uufs/chpc.utah.edu/common/home/lin-group23/ltk/SIF/TROPOMI/TROPOMI_SIF740nm-compSTD-v1.005deg_regrid.16d.2018-05-01_2024-03-31_WesternUS.nc

@@ -1,0 +1,1 @@
+/uufs/chpc.utah.edu/common/home/lin-group23/ltk/SRTM/WUS/SRTM_DEM_05d_WUS.nc

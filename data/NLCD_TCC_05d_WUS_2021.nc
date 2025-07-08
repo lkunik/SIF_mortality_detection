@@ -1,0 +1,1 @@
+/uufs/chpc.utah.edu/common/home/lin-group23/ltk/NLCD/TreeCover/2021/NLCD_TCC_05d_WUS_2021.nc
