@@ -66,7 +66,7 @@ dat_dir = 'data/'
 dat_dir = '/uufs/chpc.utah.edu/common/home/lin-group19/ltk/PhD/chapter2/for_github/data'
 
 # path to processed TROPOMI SIF file
-SIF_file = os.path.join(dat_dir, 'TROPOMI_SIF740nm-compSTD-v1.005deg_regrid.16d.2018-05-01_2024-03-31_WesternUS.nc')
+SIF_file = os.path.join(dat_dir, 'TROPOMI_SIF740nm_05deg_16d_sample.nc')
 
 # path to processed NASA SRTM DEM file
 elev_file = os.path.join(dat_dir, 'SRTM_DEM_05d_WUS.nc')
