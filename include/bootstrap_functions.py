@@ -52,7 +52,6 @@ from IPython import display
 
 # directories
 dat_dir = 'data/'
-dat_dir = '/uufs/chpc.utah.edu/common/home/lin-group19/ltk/bootstrap/code/for_github/data'
 
 wildfire_studyarea_polygon_filepath = os.path.join(dat_dir, 'shp/EPA_L3_ecoregion_studyarea_wildfire.shp') # For Wildfire Mortality
 barkbeetle_studyarea_polygon_filepath = os.path.join(dat_dir, 'shp/EPA_L3_ecoregion_studyarea_beetle.shp') # For Bark Beetle Mortality

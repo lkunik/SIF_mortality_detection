@@ -63,7 +63,7 @@ from IPython import display
 #%%
 # directories
 dat_dir = 'data/'
-dat_dir = '/uufs/chpc.utah.edu/common/home/lin-group19/ltk/bootstrap/code/for_github/data'
+dat_dir = '/uufs/chpc.utah.edu/common/home/lin-group19/ltk/PhD/chapter2/for_github/data'
 
 # path to processed TROPOMI SIF file
 SIF_file = os.path.join(dat_dir, 'TROPOMI_SIF740nm-compSTD-v1.005deg_regrid.16d.2018-05-01_2024-03-31_WesternUS.nc')
@@ -98,7 +98,7 @@ control_sample_size = 100
 
 estimated_mortality_year = mortality_detection_year - 1
 
-control_polygon_filepath = os.path.join(dat_dir,'shp/control_pixels_base_2011-2023_cumMA_lt10p_ENF_noBurn_SCKlower_05d.shp') # For Bark Beetle Mortality
+control_polygon_filepath = os.path.join(dat_dir,'shp/control_pixels_05d.shp') # For Bark Beetle Mortality
 mortality_polygon_filepath =  os.path.join(dat_dir, 'shp/mortality_pixels_2023_ModerateSevere_MA_25-35p_05d.shp') # For Bark Beetle Mortality
 wildfire_studyarea_polygon_filepath = os.path.join(dat_dir, 'shp/EPA_L3_ecoregion_studyarea_wildfire.shp') # For Wildfire Mortality
 barkbeetle_studyarea_polygon_filepath = os.path.join(dat_dir, 'shp/EPA_L3_ecoregion_studyarea_beetle.shp') # For Bark Beetle Mortality
@@ -135,10 +135,18 @@ mortality_polygon_gdf = gpd.read_file(mortality_polygon_filepath)
 mortality_polygon_geom = mortality_polygon_gdf.geometry.apply(mapping)
 num_mortality_pixels = len(mortality_polygon_gdf)
 
+# Get the bounding box (min/max lon/lat) of the mortality polygons
+minx, miny, maxx, maxy = mortality_polygon_gdf.total_bounds
+print(f"Mortality pixel extent: lon [{minx}, {maxx}], lat [{miny}, {maxy}]")
+
 # all control pixels
 control_polygon_gdf = gpd.read_file(control_polygon_filepath)
 control_polygon_geom = control_polygon_gdf.geometry.apply(mapping)
 num_control_pixels = len(control_polygon_geom)
+
+# Get the bounding box (min/max lon/lat) of the control polygons
+minx, miny, maxx, maxy = control_polygon_gdf.total_bounds
+print(f"Control pixel extent: lon [{minx}, {maxx}], lat [{miny}, {maxy}]")
 
 # Plot map of the control and mortality pixels
 control_centroids = control_polygon_gdf.centroid
