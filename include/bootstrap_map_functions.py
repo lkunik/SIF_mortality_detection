@@ -43,9 +43,10 @@ from IPython import display
 
 # directories
 dat_dir = 'data/'
+# dat_dir = '/uufs/chpc.utah.edu/common/home/lin-group19/ltk/PhD/chapter2/for_github/data'
 
-wildfire_studyarea_polygon_filepath = os.path.join(dat_dir, 'shp/EPA_L3_ecoregion_studyarea_wildfire.shp') # For Wildfire Mortality
-barkbeetle_studyarea_polygon_filepath = os.path.join(dat_dir, 'shp/EPA_L3_ecoregion_studyarea_beetle.shp') # For Bark Beetle Mortality
+studyarea_polygon_filepath = os.path.join(dat_dir, 'shp/EPA_L3_ecoregion_studyarea.shp') # For Wildfire Mortality
+# barkbeetle_studyarea_polygon_filepath = os.path.join(dat_dir, 'shp/EPA_L3_ecoregion_studyarea_beetle.shp') # For Bark Beetle Mortality
 
 
 ########################################
@@ -59,7 +60,7 @@ control_color = "#0219aa"
 # Set up mapping info
 #########################################
 
-map_extent =  [-125, -117.8, 34.6, 43.8] 
+map_extent =  [-125, -116.5, 34.6, 48] 
 
 # use Google Satellite imagery as basemap
 tiler = img_tiles.GoogleTiles(style='satellite')
@@ -80,7 +81,7 @@ states = [x for x in reader.records() if x.attributes["admin"] == "United States
 states_geom = cfeature.ShapelyFeature([x.geometry for x in states], ccrs.PlateCarree())
 
 # Load study area bounds (for map display)
-study_area_bounds_gdf = gpd.read_file(barkbeetle_studyarea_polygon_filepath)
+study_area_bounds_gdf = gpd.read_file(studyarea_polygon_filepath)
 
 
 def setup_pixel_map(fig = None, ax = None):
@@ -112,7 +113,7 @@ def plot_mortality_control_pixel_map(control_centroids, mortality_centroids, mar
       fig, ax = setup_pixel_map(fig, ax)
 
    # Plot centroids of control and mortality pixels
-   ax.scatter(control_centroids.x, control_centroids.y, color=control_color, s=markersize, marker='o', transform=ccrs.PlateCarree(), label='Control')
+   ax.scatter(control_centroids.x, control_centroids.y, color=control_color, s=markersize-2, marker='o', transform=ccrs.PlateCarree(), label='Control')
    ax.scatter(mortality_centroids.x, mortality_centroids.y, color=mortality_color, s=markersize, marker='o', transform=ccrs.PlateCarree(), label='Mortality')
 
    # Plot legend

@@ -1,2 +1,5 @@
 01_multiKDE_bootstrap.py
 02_bootstrap_RNN_sample.py
+01a_check_Kolmogorov_multiKDE.py
+01b_check_weighting_function.py
+
