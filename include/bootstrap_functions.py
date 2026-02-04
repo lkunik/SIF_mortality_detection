@@ -29,6 +29,7 @@ warnings.filterwarnings("ignore", message="Geometry is in a geographic CRS. Resu
 import numpy as np
 import xarray as xr  # for multi dimensional data
 import pandas as pd
+from scipy import stats
 
 # shapefile/geospatial packages
 import geopandas as gpd
@@ -71,27 +72,64 @@ control_color = "#0219aa"
 # Define Functions
 #########################################
 
-def stat_summary(mortality_pixels, control_pixels, dat_var, reference_year = None, shift_years = 0):
+def compute_annual_MW_pvalues(bootstrap_ds):
+    p_values_by_year = []
+    for yyyy in bootstrap_ds.year.values:
+        mortality_vals = bootstrap_ds['mortality'].sel(year=yyyy).values
+        control_vals = bootstrap_ds['control'].sel(year=yyyy).values
+        stat, p = stats.mannwhitneyu(mortality_vals, control_vals)
+        p_values_by_year.append(p)
+    return p_values_by_year
 
-   mortality_yr_summary = mortality_pixels.annual_summary_var(dat_var, reference_year, shift_years)
-   control_yr_summary = control_pixels.annual_summary_var(dat_var, reference_year, shift_years)
+def compute_annual_KS_pvalues(bootstrap_ds):
+    p_values_by_year = []
+    for yyyy in bootstrap_ds.year.values:
+        mortality_vals = bootstrap_ds['mortality'].sel(year=yyyy).values
+        control_vals = bootstrap_ds['control'].sel(year=yyyy).values
+        stat, p = stats.ks_2samp(mortality_vals, control_vals)
+        p_values_by_year.append(p)
+    return p_values_by_year
 
-   df = pd.DataFrame({'year': mortality_yr_summary.year.values})
-   df['mortality_mean'] = mortality_yr_summary['mean'].values
-   df['mortality_std'] = mortality_yr_summary['std'].values
-   df['control_mean'] = control_yr_summary['mean'].values
-   df['control_std'] = control_yr_summary['std'].values
-   df['mean_diff'] = df['mortality_mean'] - df['control_mean']
-   df['mannwhitney_p'] = pixel_classes.compare_PixelGroup_MannWhitneyU(mortality_pixels, control_pixels, dat_var, reference_year, shift_years)
-   df['kolmogorov_smirnov_p'] = pixel_classes.compare_PixelGroup_Kolmogorov_Smirnov(mortality_pixels, control_pixels, dat_var, reference_year, shift_years)
-   df['SMD_simple'] = df['mean_diff'] / np.sqrt((df['mortality_std']**2 + df['control_std']**2) / 2)
-   df['n_mortality'] = len(mortality_pixels.pixels)
-   df['n_control'] = len(control_pixels.pixels)
-   df['pooled_std'] = np.sqrt((((df['n_mortality']-1)*df['mortality_std']**2) + ((df['n_control']-1)*df['control_std']**2)) / (df['n_mortality'] + df['n_control'] - 2))
-   df['SMD_pooled'] = df['mean_diff'] / df['pooled_std']
-   df['SMD_control'] = df['mean_diff'] / df['control_std']
-   
-   return df
+
+def stat_summary(input_ds, reference_year = None, shift_years = 0):
+
+    if reference_year is not None:
+        bootstrap_ds = input_ds * 100 / input_ds.sel(year=reference_year)
+    else:
+        bootstrap_ds = input_ds
+
+    if shift_years != 0:
+        bootstrap_ds = bootstrap_ds - bootstrap_ds.shift(year=shift_years)
+    else:
+        bootstrap_ds = bootstrap_ds
+    
+    bootstrap_ds['diff'] = bootstrap_ds['mortality'] - bootstrap_ds['control']
+    mortality_yr_mean = bootstrap_ds['mortality'].mean(dim='pair_id')
+    mortality_yr_std = bootstrap_ds['mortality'].std(dim='pair_id')
+    control_yr_mean = bootstrap_ds['control'].mean(dim='pair_id')
+    control_yr_std = bootstrap_ds['control'].std(dim='pair_id')
+    diff_yr_mean = bootstrap_ds['diff'].mean(dim='pair_id')
+    diff_yr_std = bootstrap_ds['diff'].std(dim='pair_id')
+    
+
+    df = pd.DataFrame({'year': mortality_yr_mean.year.values})
+    df['mortality_mean'] = mortality_yr_mean.values
+    df['mortality_std'] = mortality_yr_std.values
+    df['control_mean'] = control_yr_mean.values
+    df['control_std'] = control_yr_std.values
+    df['mean_diff'] = diff_yr_mean.values
+    df['std_diff'] = diff_yr_std.values
+    df['mannwhitney_p'] = compute_annual_MW_pvalues(bootstrap_ds)
+    df['kolmogorov_smirnov_p'] = compute_annual_KS_pvalues(bootstrap_ds)
+    df['SMD_simple'] = df['mean_diff'] / np.sqrt((df['mortality_std']**2 + df['control_std']**2) / 2)
+    df['n_pairs'] = len(bootstrap_ds.pair_id.values)
+    df['pooled_std'] = np.sqrt((((df['n_pairs']-1)*df['mortality_std']**2) + ((df['n_pairs']-1)*df['control_std']**2)) / (df['n_pairs'] + df['n_pairs'] - 2))
+    df['SMD_pooled'] = df['mean_diff'] / df['pooled_std']
+    df['SMD_control'] = df['mean_diff'] / df['control_std']
+    df['SMD_paired'] = df['mean_diff'] / df['std_diff']
+    
+    return df
+
 
 def compute_kde_density_from_gdf(gdf, xr_dataarray, value_name, value_range, bw_method='scott'):
    """
@@ -134,7 +172,10 @@ def calculate_mean_across_dataframes(df_array):
       'control_std': 'mean',
       'mean_diff': 'median',
       'mannwhitney_p': 'mean',
-      'kolmogorov_smirnov_p': 'mean'
+      'kolmogorov_smirnov_p': 'mean',
+      'pooled_std': 'mean',
+      'SMD_pooled': 'median',
+      'SMD_paired': 'median',
    }).reset_index()
 
    # Assuming mean_df and concatenated_df are already defined
@@ -203,7 +244,7 @@ def plot_summary(summary_df, plot_title, yax_label, mortality_year, fig = None, 
       fig, ax = plt.subplots(figsize=(3.5, 2)) # establish the figure, axes
    
    ax.grid(color = "gray", linestyle = "--", linewidth = 1, alpha = 0.5, zorder = 1) # add grid lines
-   ax.axhline(y = 0, color = 'navy', linestyle = '--', zorder = 2) # dashed line at 0 for context
+   ax.axhline(y = 100, color = 'navy', linestyle = '--', zorder = 2) # dashed line at 0 for context
 
    # Define the width of the bars and the positions
    width = 0.15
@@ -274,11 +315,12 @@ def plot_summary(summary_df, plot_title, yax_label, mortality_year, fig = None, 
    ax.text(mortality_label_x, ymax-(sigtest_yspacer*0.5), 'Mortality', ha='left', va='top', color='black', fontsize='medium')
 
    # Set the axis labels and title
-   ax.set(title=plot_title, ylabel=yax_label)
+   ax.set_title(plot_title, fontsize=12)
+   ax.set_ylabel(yax_label, fontsize=12)
    ax.set_ylim(ymin, ymax)
    ax.xaxis.label.set_visible(False) # Hide the x-axis label
    ax.set_xticks(summary_df.year.values)
-   ax.set_xticklabels(summary_df.year.values)
+   ax.set_xticklabels(summary_df.year.values, fontsize=10)
    ax.set_xlim([plot_start_date.year-0.5, plot_end_date.year+0.5])
 
    # add legend including the shaded error region
@@ -338,3 +380,5 @@ def plot_bootstrap_pval_stabilization(cumulative_df_arr, yyyy,  fig = None, ax =
    # add legend including the shaded error region
    ax.legend()
 
+
+# %%
